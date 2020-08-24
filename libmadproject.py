@@ -10,8 +10,8 @@ from string import ascii_letters
 
 
 #DATOS CALIDAD DE AIRE ANUALES: Calidad del aire. Datos diarios años 2001 a 2020, https://datos.madrid.es/portal/site/egob/menuitem.c05c1f754a33a9fbe4b2e4b284f1a5a0/?vgnextoid=aecb88a7e2b73410VgnVCM2000000c205a0aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextfmt=default
-url = 'data2020.csv'
-df = pd.read_csv(url, sep = ';')
+# url = 'data2020.csv'
+# df = pd.read_csv(url, sep = ';')
 
 def day_data_to_float(df):
     for column in df.columns:
@@ -42,7 +42,7 @@ def position_d_y_v(df):
         pos_colum += 1
     
     return d_columns
-d_columns = position_d_y_v(df)
+# d_columns = position_d_y_v(df)
 def days_in_one_column(df,d_columns):
     # d_columns = position_d_y_v(df)
     #id_vars: los que se mantienen

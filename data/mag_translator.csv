@@ -1,0 +1,18 @@
+﻿MAGNITUD;mag_nombre;mag_formula;mag_unidad;tec_code;tec
+1;Dioxido de Azufre ;SO2 ;μg/m 3 ;38;Fluorescencia ultravioleta 
+6;Monoxido de Carbono ;CO ;mg/m3 ;48;Absorción infrarroja 
+7;Monoxido de Nitrogeno ;NO ;μg/m3 ;8;Quimioluminiscencia 
+8;Dioxido de Nitrogeno ;NO2 ;μg/m 3 ;8;Id. 
+9;Particulas < 2.5 μm ;PM2.5 ;μg/m3 ;47;Microbalanza 
+10;Particulas < 10 μm ;PM10 ;μg/m3 ;47;Id. 
+12;Oxidos de Nitrogeno ;NOx ;μg/m3 ;8;Quimioluminiscencia 
+14;Ozono ;O3 ;μg/m 3 ;6;Absorción ultravioleta 
+20;Tolueno ;TOL ;μg/m3 ;59;Cromatografía de gases 
+30;Benceno ;BEN ;μg/m3 ;59;Id. 
+35;Etilbenceno ;EBE ;μg/m3 ;59;Id. 
+37;Metaxileno ;MXY ;μg/m3 ;59;Id. 
+38;Paraxileno ;PXY ;μg/m3 ;59;Id. 
+39;Ortoxileno ;OXY ;μg/m3 ;59;Id. 
+42;Hidrocarburos totales (hexano) ;TCH ;mg/m3 ;2;Ionización de llama 
+43;Metano ;CH4 ;mg/m3 ;2;Id. 
+44;Hidrocarburos no metanicos (hexano) ;NMHC ;mg/m3 ;2;Id. 
