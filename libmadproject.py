@@ -13,6 +13,7 @@ from string import ascii_letters
 # url = 'data2020.csv'
 # df = pd.read_csv(url, sep = ';')
 
+# Contamination values are casted to float
 def day_data_to_float(df):
     for column in df.columns:
         if ('D' in column and column != 'MAGNITUD'):
@@ -21,6 +22,8 @@ def day_data_to_float(df):
             df[column] = df[column].apply(to_float)
     return df
 
+# The contamination values labeled with letter "N" are not valid so they were replaced
+#by nan
 def valid_data(df):    
     num_colum = 0
     for column in df.columns:  
@@ -30,6 +33,7 @@ def valid_data(df):
                     df.iloc[row,num_colum] = np.nan
         num_colum += 1
     return df
+#localitation of columns with contamination values and columns with validation labels   
 def position_d_y_v(df):
     pos_colum = 0
     d_columns = []
@@ -43,6 +47,8 @@ def position_d_y_v(df):
     
     return d_columns
 # d_columns = position_d_y_v(df)
+
+# Transformation of the df to time series df: date - contamination value 
 def days_in_one_column(df,d_columns):
     # d_columns = position_d_y_v(df)
     #id_vars: los que se mantienen
@@ -51,6 +57,8 @@ def days_in_one_column(df,d_columns):
     return df
         
 # df = df.dropna()
+
+# Creation of datetime column with date column
 def creo_fecha(df):
     #me quedo con el numero D01: 01
     df['DIA_NUM'] = df['DIA'].apply(lambda x: x[1:])
@@ -64,6 +72,7 @@ def creo_fecha(df):
     df["FECHA_str"] = df["FECHA"].dt.strftime('%Y-%m-%d')
     return df
 
+# Label each measuring station with the district in which it's located
 def column_distrito(df):
 
     distrito = pd.read_csv('estacion_distrito.csv', sep =';')
@@ -86,7 +95,9 @@ def column_distrito(df):
        
     df['distrito_name'] = distri_name
     return df
-#Hasta aquí la limpieza del df+introduccion del distrito: todo unido
+# End os the df cleaning + aggreagtion of district column
+
+# daily_airmad is a fuction that calls the cleaning fuctions of the df  
 def daily_airmad(url):
     #es una función que llama a todas las anteriores
     df = pd.read_csv(url, sep = ';')
@@ -100,7 +111,16 @@ def daily_airmad(url):
     df = column_distrito(df)
     #este df tiene la fecha, el distrito, la magnitud a la que se refiere y los values de contaminacion
     return df
-
+# generalization of daily_airmad
+def daily_airmad_varios(list_url):
+    dfs = []
+    for url in list_url:
+        df = daily_airmad(url)
+        dfs.append(df)
+    
+    concat_dfs = pd.concat(dfs, axis = 0).reset_index()
+    return concat_dfs
+#mapa_por_distritos plots a map with contamination values in each district
 def mapa_por_distritos(url):
     df2 = daily_airmad_mu_m3(url)
     df_magnitudes_selected = df2[(df2.MAGNITUD==1) | (df2.MAGNITUD==6)| (df2.MAGNITUD==7)| (df2.MAGNITUD==8)| (df2.MAGNITUD==9)| (df2.MAGNITUD==12)| (df2.MAGNITUD==14)]
@@ -124,10 +144,7 @@ def mapa_por_distritos(url):
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     fig.show()
 
-#ahora hay diferentes opciones de presentación del df
-#OPCIÓN1:
-#se hace la media de las diferentes estaciones en las que se ha tomado la medida. pierdo info de las ESTACIONES.
-# df1 = df.groupby(['FECHA','MAGNITUD']).mean()[['FECHA', 'MAGNITUD','Value']]
+#we can select the data to plot a map with contamination in each district
 def mapa_por_distritos_periodos(url):
     df2 = daily_airmad_mu_m3(url)
     df_magnitudes_selected = df2[(df2.MAGNITUD==1) | (df2.MAGNITUD==6)| (df2.MAGNITUD==7)| (df2.MAGNITUD==8)| (df2.MAGNITUD==9)| (df2.MAGNITUD==12)| (df2.MAGNITUD==14)]
@@ -173,11 +190,8 @@ def mapa_por_distritos_periodos(url):
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     fig.show()
 
-#ahora hay diferentes opciones de presentación del df
-#OPCIÓN1:
-#se hace la media de las diferentes estaciones en las que se ha tomado la medida. pierdo info de las ESTACIONES.
-# df1 = df.groupby(['FECHA','MAGNITUD']).mean()[['FECHA', 'MAGNITUD','Value']]
 
+# contaminantes: average contamination per measurement station
 def contaminantes(df):
     df = df.groupby(['FECHA','MAGNITUD']).mean()[['FECHA', 'MAGNITUD','Value']]
     fig, ax = plt.subplots(figsize = (10,5))
@@ -196,9 +210,7 @@ def contaminantes(df):
                 label.set_visible(False)
     return df
 
-#OPCION2, UNA COLUMNA POR CADA VALOR DE MAGNITUD. Hay que hacer todos los pasos de transformacion del df. La representacion así es más sencilla.
-# df2=df.reset_index().pivot_table(values='Value', index='FECHA', columns='MAGNITUD')
-
+# The different contaminations are separated into columns
 def one_column_per_element(df):
 
     df=df.reset_index().pivot_table(values='Value', index='FECHA', columns='MAGNITUD')
@@ -214,6 +226,8 @@ def one_column_per_element(df):
     #y 3. luego cambio el nombre de las columnas
     df = df.rename(columns = dictionary)
     return df
+
+# list of cleaned df. This fuctions is created to contac all df's.
 def list_of_dfs(list_url):
     list_df = []
     list_y = []
@@ -223,7 +237,7 @@ def list_of_dfs(list_url):
         list_df.append(df)
     return list_df
 
-    #####FUNCION REPRESENTA:
+# plotting the different contamination levels
 def ploteo_one_element_per_column_general(list_url):
     #plot todos los elementos de cada df por separado
     list_df= list_of_dfs(list_url)
@@ -234,92 +248,7 @@ def ploteo_one_element_per_column_general(list_url):
         title = df.index.year[0]
         plt.title(title)
 
-# def get_SO2_v1(list_url):
-#     list_df = []
-#     list_y = []
-#     for url in list_url:
-#         df = daily_airmad(url)
-#         df = one_column_per_element(df)
-#         list_df.append(df)
-#     y = list_df[0].reset_index().iloc[:,1]
-#     list_y.append(y)
-#     for pos in range(len(list_df)-1):      
-#         df = pd.merge(left = list_df[pos].reset_index(), how = 'outer',right = list_df[pos+1].reset_index(), left_index = True, right_index = True).dropna()
-#         y = df.iloc[:,1]
-#         list_y.append(y)
-#     return df, list_y
-
-def get_SO2_values(list_url):
-    list_df = []
-    list_y = []
-    list_y2 = []
-    size_y = []
-    for url in list_url:
-        df = daily_airmad(url)
-        df = one_column_per_element(df)
-        # list_df.append(df)
-        y = df.iloc[:,0].values
-        size_y.append(len(y))
-        list_y.append(y)
-
-    min_size = min(size_y)
-    for i in list_y:
-        #list_y2.append(i.iloc[:min_size]) para quedarme tb con el indice, habría que quitar el .values de 
-        y = df.iloc[:,0].values
-        list_y2.append(i[:min_size])
-        
-    return list_y2,min_size        
-def ploteo_so2_general(list_urls):
-    # dfs = list_of_dfs(list_urls)
-    list_df= list_of_dfs(list_urls)
-    #solo nos quedamos con DIA Y MES a la hora de representar
-    list_y,min_size = get_SO2_values(list_urls)
-    fig, ax = plt.subplots(figsize=(20,7))
-    plt.style.use('Solarize_Light2')
-    xprima = list_df[0].index.values[:min_size]
-    for pos,y in enumerate(list_y):
-        ax.plot(xprima,y, marker = '^', label = list_df[pos].index.year[0])
-    
-    ax.set_xticklabels(xprima, rotation = 45, fontsize = 20)
-    ax.legend(frameon=False, loc='upper center', ncol=len(list_y), fontsize = 20)
-    ax.set_title('Dioxido de azufre en Madrid',fontsize = 30)
-    ax.set_ylabel('Contaminacion μg/m^3', fontsize = 20)
-    #years_fmt = mdates.DateFormatter('%m-%d')
-    #ax.xaxis.set_major_formatter(years_fmt)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    ax.set_xlabel('Periodo', fontsize = 20)
-    every_nth = 1
-    for n, label in enumerate(ax.xaxis.get_ticklabels()):
-        if n % every_nth != 0:
-            label.set_visible(False)
-
-    plt.show()
-
-# def heatplot_distritos(url,bool_annot = False):
-    
-#     # bool_annot si queremos mostrar en cada cuadradito el valor de contaminacion
-#     # size_etiquetas_bool las etiquetas se pueden poner mas grandes si el numero de datos a representar es pequeño, sino ensucia mucho
-#     sns.set()
-#     df = daily_airmad(url)
-#     df_magnitudes_selected = df[(df.MAGNITUD!=6) & (df.MAGNITUD!=42)& (df.MAGNITUD!=44)& (df.MAGNITUD!=44)]
-
-#     df_distritos_selected = df_magnitudes_selected[(df_magnitudes_selected.distrito == 1) | (df_magnitudes_selected.distrito == 4) | (df_magnitudes_selected.distrito == 9) | (df_magnitudes_selected.distrito == 13) | (df_magnitudes_selected.distrito == 21)]
-#     mapeo = df_distritos_selected.groupby(['FECHA','distrito_name']).mean().reset_index()[['FECHA','Value','distrito_name']]
-#     mapeo['date'] = mapeo['FECHA'].sort_values().dt.strftime('%Y - %m - %d')
-#     heatplot = mapeo.pivot('distrito_name','date','Value') 
-#     plt.subplots(figsize=(30,10))
-#     ax = sns.set(font_scale=2)
-#     ax = sns.heatmap(heatplot, cmap='Reds',annot=bool_annot, annot_kws={'size':12})   
-#     ax.set_xlabel('FECHA', fontsize = 18)
-#     ax.set_ylabel('Distritos', fontsize = 18)
-
-#     si_mes_mayor_que_tres = (mapeo['FECHA'].dt.month >3).any()
-#     if not si_mes_mayor_que_tres:
-#         ax.set_xticklabels(heatplot.columns,fontsize = 16, rotation = 90)
-#         ax.set_yticklabels(heatplot.index,fontsize = 10)
-#         bool_annot = True
-#     else:
-#          bool_annot = False
+# Ploting contamination level in 5 different districts over the years
 def heatplot_distritos_general(url):
     sns.set()
     df2 = daily_airmad_mu_m3(url)
@@ -351,81 +280,8 @@ def heatplot_distritos_general(url):
 
             label.set_visible(False)
     plt.show()
-# def heatplot_distritos_general(url):
-#     sns.set()
-#     df = daily_airmad(url)
-#     df_magnitudes_selected = df[(df.MAGNITUD!=6) & (df.MAGNITUD!=42)& (df.MAGNITUD!=44)& (df.MAGNITUD!=44)]
-#      #dioxido de azufre, monoxido de nitrogeno, dioxido de nitrogeno, particulas <2.5micras, partículas < 10 micras, óxidos de nitrógeno, ozono, tolueno, benceno, etilbenceno, metalxileno, paraxileno, ortoxileno (microg/m3)
-
-#     #se excluyen = 6- monóxido de carbono, 42-hidrocarburos totales, 43-metano e 44-hidrocarburos no meránicos(hexano)
-
-#     df_distritos_selected = df_magnitudes_selected[(df_magnitudes_selected.distrito == 1) | (df_magnitudes_selected.distrito == 4) | (df_magnitudes_selected.distrito == 9) | (df_magnitudes_selected.distrito == 13) | (df_magnitudes_selected.distrito == 21)]
-#     mapeo = df_distritos_selected.groupby(['FECHA','distrito_name']).mean().reset_index()[['FECHA','Value','distrito_name']]
-
-#     heatplot = mapeo.pivot('distrito_name','FECHA','Value') 
-#     plt.subplots(figsize=(30,10))
-#     ax = sns.set(font_scale=2)
-#     # ax = sns.set()
-#     ax = sns.heatmap(heatplot, cmap="RdPu", annot_kws={'size':12})   
-#     ax.set_xlabel('FECHA', fontsize = 18)
-#     ax.set_ylabel('Distritos', fontsize = 18)
-#     ax.set_xticks(range(len(heatplot.columns)))
-#     ax.set_xticklabels(heatplot.columns.strftime('%Y - %m - %d'),fontsize =20)
-#     plt.yticks(rotation=0, fontsize =20) 
-    
-#     every_nth = 7
-#     for n, label in enumerate(ax.xaxis.get_ticklabels()):
-#         if n % every_nth != 0:
-
-#             label.set_visible(False)
-#     plt.show()
-    
-def get_element_values(list_url, element):
-    list_df = []
-    list_y = []
-    list_y2 = []
-    size_y = []
-    for url in list_url:
-        df = daily_airmad(url)
-        df = one_column_per_element(df)
-        # list_df.append(df)
-        y = df.iloc[:,element].values
-        size_y.append(len(y))
-        list_y.append(y)
-
-    min_size = min(size_y)
-    for i in list_y:
-        #list_y2.append(i.iloc[:min_size]) para quedarme tb con el indice, habría que quitar el .values de 
-        y = df.iloc[:,element].values
-        list_y2.append(i[:min_size])
-        
-    return list_y2,min_size        
-def ploteo_general(list_urls, element = 0,title = 'Dioxido de azufre en Madrid'):
-    # dfs = list_of_dfs(list_urls)
-    list_df= list_of_dfs(list_urls)
-    #solo nos quedamos con DIA Y MES a la hora de representar
-    list_y,min_size = get_element_values(list_urls,element)
-    fig, ax = plt.subplots(figsize=(20,10))
-    plt.style.use('Solarize_Light2')
-    xprima = list_df[0].index.values[:min_size]
-    for pos,y in enumerate(list_y):
-        ax.plot(xprima,y, marker = '^', label = list_df[pos].index.year[0])
-    
-    ax.set_xticklabels(xprima, rotation = 45, fontsize = 20)
-    ax.legend(frameon=False, loc='upper center', ncol=len(list_y), fontsize = 20)
-    ax.set_title(title,fontsize = 30)
-    ax.set_ylabel('Contaminacion μg/m^3', fontsize = 20)
-    #years_fmt = mdates.DateFormatter('%m-%d')
-    #ax.xaxis.set_major_formatter(years_fmt)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    ax.set_xlabel('Periodo', fontsize = 20)
-    every_nth = 1
-    for n, label in enumerate(ax.xaxis.get_ticklabels()):
-        if n % every_nth != 0:
-            label.set_visible(False)
-
-    plt.show()
-    
+  
+# contamination levels in the different months and different years  
 def bars_for_years(list_urls):
 
     list_test2=[]
@@ -456,25 +312,6 @@ def bars_for_years(list_urls):
     plt.title('Sulphur dioxide, nitrogen monoxide, nitrogen dioxide, microparticles, nitrogen oxides, ozone,\n toluene, benzene, ethylbenzene, metalxylene, paraxylene, orthoxylene contamination levels in Madrid')
     
     
-    # '''PRUEBA PLOT BAR'''
-    # fig,ax = plt.subplots()
-    # plt.style.use('fivethirtyeight')
-    # x = concatenacion_dfs['Date'].unique()
-    # y = concatenacion_dfs['Value']
-    # bar_position=np.arange(24)
-    # ax.bar(bar_position,y)
-    # ax.yaxis.set_visible(False)
-
-    # '''FIN PRUEBA'''
-    # pd.melt(a[['ano','Value','mesday']],id_vars = ['ano','mesday'],value_vars=['Value'])
-
-    '''heatmap descartado por el tipo de datos: no deja que el index sea distinto y se represente en la misma posición x'''
-    
-    # heattest = concatenacion_dfs.pivot('ano','FECHA_str','Value')
-    # plt.subplots()
-    # ax=sns.set()
-    # ax=sns.heatmap(heattest,cmap='YlGn')
-    # return concatenacion_dfs
 def bars_for_years_2(list_urls):
     # 6- monóxido de carbono, 42-hidrocarburos totales, 43-metano e 44-hidrocarburos no meránicos(hexano)
     #SE EXPLUYEN: dioxido de azufre, monoxido de nitrogeno, dioxido de nitrogeno, particulas <2.5micras, partículas < 10 micras, óxidos de nitrógeno, ozono, tolueno, benceno, etilbenceno, metalxileno, paraxileno, ortoxileno (microg/m3)
@@ -527,14 +364,9 @@ def heat_map_years(list_urls):
     ax = sns.heatmap(hmap,cmap="YlGnBu",cbar_kws={'label': 'Contamination (AU)'})
     ax.set_ylabel('')
     
-def daily_airmad_varios(list_url):
-    dfs = []
-    for url in list_url:
-        df = daily_airmad(url)
-        dfs.append(df)
-    
-    concat_dfs = pd.concat(dfs, axis = 0).reset_index()
-    return concat_dfs
+
+
+
 '''FUNCIONES AEMET TIEMPO EN RETIRO Y BARAJAS'''
 def merge_json(list_json):
     dfs = []
